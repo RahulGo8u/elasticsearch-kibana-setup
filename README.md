@@ -1,19 +1,23 @@
-📦 Installation
+Installation: 
 pip install -r requirements.txt
 
-⚙️ Configuration
 
-Update the config.py file with your Elasticsearch details:
+Configuration:
 
-🌐 Elasticsearch Host
+Edit config.py with your settings:
 
-📂 Index Name
+KIBANA_URL = "http://metrics-kibana.cmh.corp.evinternal.net/api/console/proxy"
 
-🔐 Authentication Credentials (if required)
+HEADERS = {
+    "Content-Type": "application/json",
+    "kbn-xsrf": "true",
+    "kbn-version": "7.5.0"
+}
+ 
+INDEX_PATTERN = "filebeat-*"
+PROD_ACCOUNT = "evtech-reports-prod"
+DEFAULT_SIZE = 50
 
-Example:
 
-ES_HOST = "http://localhost:9200"
-INDEX_NAME = "logs-index"
-▶️ Run the Application
+Run the Application:
 python main.py
