@@ -13,7 +13,7 @@ def fetch_exception_logs(identifier: str,
         raise ValueError("Identifier cannot be empty")
 
     query_body = {
-        "size": 50,
+        "size": DEFAULT_SIZE,
         "sort": [
             {
                 "@timestamp": {
@@ -35,11 +35,11 @@ def fetch_exception_logs(identifier: str,
         "query": {
             "bool": {
                 "filter": [
-                    { "match_phrase": { "cloud.account.name": "evtech-reports-prod" } },
+                    { "match_phrase": { "cloud.account.name": PROD_ACCOUNT } },
                     {
                         "query_string": {
                             "fields": ["message", "event.original", "log.original"],
-                            "query": "*exception*"
+                            "query": f"*{identifier}*"
                         }
                     },
                     { "range": { "@timestamp": { "gte": start_time, "lte": end_time } } }
@@ -59,15 +59,14 @@ def fetch_exception_logs(identifier: str,
     for hit in data.get("hits", {}).get("hits", []):
         source = hit.get("_source", {})
 
-        # print(source)
         results.append({
             "identifier": identifier,
-    "timestamp": source.get("@timestamp"),
-    "message": source.get("message"),
-    "autoscalingGroupName": source.get("cloud.account", {}).get("autoscalingGroupName"),
-    "accountName": source.get("cloud.account", {}).get("name"),
-    "hostname": source.get("host", {}).get("name"),
-    "_index": hit.get("_index")
-})
+            "timestamp": source.get("@timestamp"),
+            "message": source.get("message"),
+            "autoscalingGroupName": source.get("cloud.account", {}).get("autoscalingGroupName"),
+            "accountName": source.get("cloud.account", {}).get("name"),
+            "hostname": source.get("host", {}).get("name"),
+            "_index": hit.get("_index"),
+        })
 
     return results
