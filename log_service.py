@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime
 from typing import List, Dict, Optional
+from urllib.parse import quote
+
 from kibana_client import search_logs
-from config import PROD_ACCOUNT, DEFAULT_SIZE
+from config import PROD_ACCOUNT, DEFAULT_SIZE, KIBANA_APP_BASE_URL
 
 _LOG_FILE = "search.log"
 _logger = logging.getLogger(__name__)
@@ -24,6 +26,31 @@ def _parse_absolute_time(time_str: str) -> Optional[datetime]:
         return None
 
 
+def _end_time_epoch_ms(end_time: str) -> int:
+    """Returns epoch milliseconds for logPosition. Uses end_time if absolute, else now."""
+    end_dt = _parse_absolute_time(end_time)
+    if end_dt is not None:
+        return int(end_dt.timestamp() * 1000)
+    return int(datetime.now().timestamp() * 1000)
+
+
+def _build_kibana_logs_url(identifier: str, start_time: str, end_time: str) -> str:
+    """Builds Kibana Logs stream URL with same filters and time range for troubleshooting."""
+    kql = f'cloud.account.name : "{PROD_ACCOUNT}" and message : *{identifier}*'
+    log_filter = f"(expression:'{quote(kql, safe='*')}',kind:kuery)"
+    time_range = f"(time:(from:'{start_time}',to:'{end_time}'))"
+    position_time_ms = _end_time_epoch_ms(end_time)
+    log_position = f"(position:(tiebreaker:0,time:{position_time_ms}),streamLive:!f)"
+    params = [
+        f"_g={time_range}",
+        "flyoutOptions=(flyoutId:!n,flyoutVisibility:hidden,surroundingLogsId:!n)",
+        f"logFilter={log_filter}",
+        "logMinimap=(intervalSize:2592000000)",
+        f"logPosition={log_position}",
+    ]
+    return f"{KIBANA_APP_BASE_URL}/app/infra#/logs/stream?" + "&".join(params)
+
+
 def _validate_time_range(start_time: str, end_time: str) -> None:
     """Validates end_time > start_time when both are absolute ISO 8601 datetimes.
     Skips validation if either value is a relative expression (e.g. 'now-90d')."""
@@ -40,7 +67,7 @@ def _validate_time_range(start_time: str, end_time: str) -> None:
 def fetch_logs(identifier: str,
                start_time: str = "now-90d",
                end_time: str = "now",
-               search_fn=search_logs) -> List[Dict]:
+               search_fn=search_logs) -> Dict:
 
     if not identifier or not identifier.strip():
         raise ValueError("Identifier cannot be empty")
@@ -85,14 +112,15 @@ def fetch_logs(identifier: str,
         }
     }
 
+    kibana_url = _build_kibana_logs_url(identifier.strip(), start_time, end_time)
+
     try:
         data = search_fn(query_body)
     except Exception as e:
         print(f"Error while fetching logs: {e}")
-        return []
+        return {"logs": [], "kibanaUrl": kibana_url}
 
     results = []
-
     for hit in data.get("hits", {}).get("hits", []):
         source = hit.get("_source", {})
 
@@ -106,4 +134,4 @@ def fetch_logs(identifier: str,
             "_index": hit.get("_index"),
         })
 
-    return results
+    return {"logs": results, "kibanaUrl": kibana_url}

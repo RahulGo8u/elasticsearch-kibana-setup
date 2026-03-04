@@ -4,13 +4,16 @@ from log_service import fetch_logs
 
 
 if __name__ == "__main__":
-    logs = fetch_logs(
+    response = fetch_logs(
         identifier="exception",
         start_time="now-90d",
         end_time="now-1m"
     )
+    logs = response["logs"]
+    kibana_url = response["kibanaUrl"]
 
-    print(f"\nTotal Logs Found: {len(logs)}\n")
+    print(f"\nTotal Logs Found: {len(logs)}")
+    print(f"Kibana (troubleshooting): {kibana_url}\n")
 
     for i, log in enumerate(logs, start=1):
         print("=" * 80)

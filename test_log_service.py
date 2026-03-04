@@ -55,11 +55,12 @@ def mock_search_logs_failure(query):
 # ===============================
 
 def test_logs_found():
-    logs = fetch_logs(
+    response = fetch_logs(
         identifier="service",
         search_fn=mock_search_logs_success
     )
-
+    logs = response["logs"]
+    assert "kibanaUrl" in response
     assert isinstance(logs, list)
     assert len(logs) == 1
     assert "exception" in logs[0]["message"].lower()
@@ -68,11 +69,12 @@ def test_logs_found():
 
 
 def test_no_logs_found():
-    logs = fetch_logs(
+    response = fetch_logs(
         identifier="randomstring",
         search_fn=mock_search_logs_empty
     )
-
+    logs = response["logs"]
+    assert "kibanaUrl" in response
     assert isinstance(logs, list)
     assert len(logs) == 0
 
@@ -86,9 +88,9 @@ def test_invalid_identifier():
 
 
 def test_elasticsearch_failure():
-    logs = fetch_logs(
+    response = fetch_logs(
         identifier="service",
         search_fn=mock_search_logs_failure
     )
-
-    assert logs == []
+    assert response["logs"] == []
+    assert "kibanaUrl" in response
