@@ -1,5 +1,5 @@
 import pytest
-from log_service import fetch_exception_logs
+from log_service import fetch_logs
 
 
 # -------------------------------
@@ -55,7 +55,7 @@ def mock_search_logs_failure(query):
 # ===============================
 
 def test_logs_found():
-    logs = fetch_exception_logs(
+    logs = fetch_logs(
         identifier="service",
         search_fn=mock_search_logs_success
     )
@@ -68,7 +68,7 @@ def test_logs_found():
 
 
 def test_no_logs_found():
-    logs = fetch_exception_logs(
+    logs = fetch_logs(
         identifier="randomstring",
         search_fn=mock_search_logs_empty
     )
@@ -79,14 +79,14 @@ def test_no_logs_found():
 
 def test_invalid_identifier():
     with pytest.raises(ValueError):
-        fetch_exception_logs(
+        fetch_logs(
             identifier="",
             search_fn=mock_search_logs_success
         )
 
 
 def test_elasticsearch_failure():
-    logs = fetch_exception_logs(
+    logs = fetch_logs(
         identifier="service",
         search_fn=mock_search_logs_failure
     )

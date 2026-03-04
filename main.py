@@ -1,10 +1,10 @@
 # main.py
 
-from log_service import fetch_exception_logs
+from log_service import fetch_logs
 
 
 if __name__ == "__main__":
-    logs = fetch_exception_logs(
+    logs = fetch_logs(
         identifier="exception",
         start_time="now-90d",
         end_time="now-1m"
