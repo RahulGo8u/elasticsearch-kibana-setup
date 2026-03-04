@@ -1,15 +1,19 @@
-1️⃣ Install Dependencies
+📦 Installation
 pip install -r requirements.txt
 
-2️⃣ Configure Elasticsearch
+⚙️ Configuration
 
-Update config.py with:
+Update the config.py file with your Elasticsearch details:
 
-Elasticsearch host
+🌐 Elasticsearch Host
 
-Index name
+📂 Index Name
 
-Authentication details (if required)
+🔐 Authentication Credentials (if required)
 
-3️⃣ Run the Application
+Example:
+
+ES_HOST = "http://localhost:9200"
+INDEX_NAME = "logs-index"
+▶️ Run the Application
 python main.py
