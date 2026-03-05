@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from typing import List, Dict, Optional
 from urllib.parse import quote
@@ -49,6 +50,35 @@ def _build_kibana_logs_url(identifier: str, start_time: str, end_time: str) -> s
         f"logPosition={log_position}",
     ]
     return f"{KIBANA_APP_BASE_URL}/app/infra#/logs/stream?" + "&".join(params)
+
+
+def _extract_stack_trace(message: str) -> Optional[str]:
+    """Extracts the first stack trace found in a log message.
+
+    Handles two formats:
+    1. Enterprise Library logs: content after 'StackTrace Information Details:' header.
+    2. Direct exception logs: consecutive lines starting with '   at '.
+    """
+    if not message:
+        return None
+
+    # Format 1: Enterprise Library embedded stack trace section
+    match = re.search(
+        r"StackTrace Information Details:\s*=+\s*(.*?)(?=Exception Information Details:|StackTrace Information Details:|$)",
+        message,
+        re.DOTALL,
+    )
+    if match:
+        trace = match.group(1).strip()
+        if trace:
+            return trace
+
+    # Format 2: direct 'at ...' lines (e.g. GeoHub-style logs)
+    at_lines = re.findall(r"^\s{1,}at .+", message, re.MULTILINE)
+    if at_lines:
+        return "\n".join(line.strip() for line in at_lines)
+
+    return None
 
 
 def _validate_time_range(start_time: str, end_time: str) -> None:
@@ -124,10 +154,12 @@ def fetch_logs(identifier: str,
     for hit in data.get("hits", {}).get("hits", []):
         source = hit.get("_source", {})
 
+        message = source.get("message")
         results.append({
             "identifier": identifier,
             "timestamp": source.get("@timestamp"),
-            "message": source.get("message"),
+            "message": message,
+            "stackTrace": _extract_stack_trace(message),
             "autoscalingGroupName": source.get("cloud.account", {}).get("autoscalingGroupName"),
             "accountName": source.get("cloud.account", {}).get("name"),
             "hostname": source.get("host", {}).get("name"),

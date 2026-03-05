@@ -26,6 +26,8 @@ if __name__ == "__main__":
         print(f"Autoscaling Group    : {log.get('autoscalingGroupName')}")
         print(f"Hostname             : {log.get('hostname')}")
         print(f"Message              :\n{log.get('message')}")
+        if log.get("stackTrace"):
+            print(f"Stack Trace          :\n{log.get('stackTrace')}")
 
         print("=" * 80)
         print("\n")
